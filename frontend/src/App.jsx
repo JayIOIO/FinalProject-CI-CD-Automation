@@ -1,33 +1,40 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) return null;
+    try {
+      return JSON.parse(storedUser);
+    } catch {
+      return null;
+    }
+  });
   const [isSignup, setIsSignup] = useState(false);
   const [activeTab, setActiveTab] = useState('shop');
 
-  // App Data
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
 
-  // Forms
   const [authData, setAuthData] = useState({ name: '', email: '', password: '' });
   const [checkoutData, setCheckoutData] = useState({ address: '', payment_method: 'Credit Card' });
   const [profileData, setProfileData] = useState({ name: '', password: '' });
 
   const authConfig = { headers: { Authorization: `Bearer ${token}` } };
 
-  // --- INITIAL LOAD ---
   useEffect(() => {
     fetchProducts();
     if (token) {
       fetchOrders();
-      if (user) setProfileData({ name: user.name, password: '' });
+      if (user) {
+        setProfileData({ name: user.name, password: '' });
+      }
     }
   }, [token]);
 
@@ -49,7 +56,6 @@ export default function App() {
     }
   };
 
-  // --- CART MANAGERS ---
   const addToCart = (product) => {
     const existing = cart.find((item) => item.id === product.id);
     if (existing) {
@@ -75,7 +81,6 @@ export default function App() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // --- ORDER CRUD ---
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
       await axios.put(`${API_URL}/orders/${orderId}`, { status: newStatus }, authConfig);
@@ -95,35 +100,26 @@ export default function App() {
     }
   };
 
- // --- PROFILE MANAGEMENT (CHANGE NAME IN DATABASE) ---
-const handleUpdateProfile = async (e) => {
-  e.preventDefault();
-  if (!profileData.name.trim()) return alert('Name cannot be empty');
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    if (!profileData.name.trim()) return alert('Name cannot be empty');
 
-  try {
-    // Send PUT request to Express backend
-    const res = await axios.put(
-      `${API_URL}/auth/profile`,
-      { name: profileData.name },
-      authConfig
-    );
+    try {
+      const res = await axios.put(`${API_URL}/auth/profile`, { name: profileData.name }, authConfig);
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data.user));
+      setToken(res.data.token);
+      setUser(res.data.user);
+      alert('Name successfully updated in database!');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to update profile name');
+    }
+  };
 
-    // Save updated token & user in React state and localStorage
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('user', JSON.stringify(res.data.user));
-    setToken(res.data.token);
-    setUser(res.data.user);
-
-    alert('Name successfully updated in database!');
-  } catch (err) {
-    alert(err.response?.data?.error || 'Failed to update profile name');
-  }
-};
-
-  // --- AUTH & CHECKOUT ---
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     const endpoint = isSignup ? `${API_URL}/auth/signup` : `${API_URL}/auth/login`;
+
     try {
       const res = await axios.post(endpoint, authData);
       localStorage.setItem('token', res.data.token);
@@ -172,7 +168,6 @@ const handleUpdateProfile = async (e) => {
     }
   };
 
-  // --- AUTHENTICATION VIEW ---
   if (!token) {
     return (
       <div className="auth-wrapper">
@@ -181,6 +176,7 @@ const handleUpdateProfile = async (e) => {
             <h1>🛍 Shopee Clone</h1>
             <p>{isSignup ? 'Create your new account' : 'Log in to start shopping'}</p>
           </div>
+
           <form onSubmit={handleAuthSubmit} className="auth-form">
             {isSignup && (
               <input
@@ -191,6 +187,7 @@ const handleUpdateProfile = async (e) => {
                 required
               />
             )}
+
             <input
               type="email"
               className="auth-input"
@@ -199,6 +196,7 @@ const handleUpdateProfile = async (e) => {
               onChange={(e) => setAuthData({ ...authData, email: e.target.value })}
               required
             />
+
             <input
               type="password"
               className="auth-input"
@@ -207,13 +205,15 @@ const handleUpdateProfile = async (e) => {
               onChange={(e) => setAuthData({ ...authData, password: e.target.value })}
               required
             />
+
             <button type="submit" className="auth-button">
               {isSignup ? 'Sign Up' : 'Log In'}
             </button>
           </form>
+
           <div className="auth-toggle-container">
             <button onClick={() => setIsSignup(!isSignup)} className="auth-toggle-btn">
-              {isSignup ? 'Existing user? Log In' : "New to Shopee? Sign Up"}
+              {isSignup ? 'Existing user? Log In' : 'New to Shopee? Sign Up'}
             </button>
           </div>
         </div>
@@ -221,10 +221,8 @@ const handleUpdateProfile = async (e) => {
     );
   }
 
-  // --- STORE FRONTEND VIEW ---
   return (
     <div>
-      {/* Header */}
       <header className="shopee-header">
         <div className="header-container">
           <h2 className="brand-title" onClick={() => setActiveTab('shop')}>
@@ -237,12 +235,11 @@ const handleUpdateProfile = async (e) => {
         </div>
       </header>
 
-      {/* Navigation */}
       <div className="shopee-nav">
         <div className="nav-container">
           {[
             { id: 'shop', label: 'Mall Products' },
-            { id: 'cart', label: `My Cart (${cart.reduce((s, i) => s + i.quantity, 0)})` },
+            { id: 'cart', label: `My Cart (${cart.reduce((sum, item) => sum + item.quantity, 0)})` },
             { id: 'orders', label: `My Orders (${orders.length})` },
             { id: 'profile', label: 'My Account Settings' }
           ].map((tab) => (
@@ -257,10 +254,7 @@ const handleUpdateProfile = async (e) => {
         </div>
       </div>
 
-      {/* Content Container */}
       <main className="main-container">
-        
-        {/* VIEW 1: PRODUCTS CATALOG */}
         {activeTab === 'shop' && (
           <div className="product-grid">
             {products.map((prod) => (
@@ -283,7 +277,6 @@ const handleUpdateProfile = async (e) => {
           </div>
         )}
 
-        {/* VIEW 2: CART & CHECKOUT */}
         {activeTab === 'cart' && (
           <div>
             {cart.length === 0 ? (
@@ -303,14 +296,17 @@ const handleUpdateProfile = async (e) => {
                         <h4 style={{ fontSize: '14px' }}>{item.name}</h4>
                         <small style={{ color: '#888' }}>${parseFloat(item.price).toFixed(2)}</small>
                       </div>
+
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <button onClick={() => updateQuantity(item.id, -1)} className="qty-btn">-</button>
                         <span>{item.quantity}</span>
                         <button onClick={() => updateQuantity(item.id, 1)} className="qty-btn">+</button>
                       </div>
+
                       <div style={{ flex: 1, textAlign: 'right', fontWeight: 'bold', color: '#ee4d2d' }}>
                         ${(item.price * item.quantity).toFixed(2)}
                       </div>
+
                       <button onClick={() => removeFromCart(item.id)} className="btn-remove">✕</button>
                     </div>
                   ))}
@@ -322,6 +318,7 @@ const handleUpdateProfile = async (e) => {
                     <span>Total Pay:</span>
                     <span style={{ color: '#ee4d2d' }}>${cartTotal.toFixed(2)}</span>
                   </div>
+
                   <form onSubmit={handleCheckoutSubmit} className="checkout-form">
                     <label className="form-label">SHIPPING ADDRESS</label>
                     <textarea
@@ -354,7 +351,6 @@ const handleUpdateProfile = async (e) => {
           </div>
         )}
 
-        {/* VIEW 3: ORDER HISTORY */}
         {activeTab === 'orders' && (
           <div className="orders-card">
             <h3 className="card-title">Order History (CRUD Operations)</h3>
@@ -400,40 +396,24 @@ const handleUpdateProfile = async (e) => {
           </div>
         )}
 
-        {/* VIEW 4: MY ACCOUNT PROFILE */}
         {activeTab === 'profile' && (
           <div className="profile-card" style={{ maxWidth: '500px', margin: '0 auto' }}>
             <h3 className="card-title">Account Settings</h3>
-            <form onSubmit={handleUpdateProfile} className="checkout-form">
-              <div>
-                <label className="form-label">Email Address (Read-only)</label>
-                <input
-                  type="email"
-                  value={user?.email || ''}
-                  disabled
-                  className="form-input"
-                  style={{ background: '#f5f5f5', border: '1px solid #eee' }}
-                />
-              </div>
 
-              <div>
-                <label className="form-label">Full Name (CHANGE NAME)</label>
-                <input
-                  type="text"
-                  value={profileData.name}
-                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                  className="form-input"
-                  required
-                />
-              </div>
+            <form onSubmit={handleUpdateProfile} className="profile-form">
+              <label className="form-label">FULL NAME</label>
+              <input
+                className="form-input"
+                value={profileData.name}
+                onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+              />
 
-              <button type="submit" className="btn-submit">
-                Save Profile Changes
+              <button type="submit" className="btn-submit" style={{ marginTop: '15px' }}>
+                Update Name
               </button>
             </form>
           </div>
         )}
-
       </main>
     </div>
   );

@@ -1,0 +1,127 @@
+﻿services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-ecommerce_db}
+      MYSQL_USER: ${DB_USER:-app_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-app_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  auth-service:
+    build: ./services/auth-service
+    container_name: auth-service
+    env_file:
+      - .env
+    environment:
+      PORT: ${AUTH_PORT:-4001}
+      DB_HOST: db
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER:-app_user}
+      DB_NAME: ${DB_NAME:-ecommerce_db}
+      DB_PASSWORD: ${DB_PASSWORD:-app_password}
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:${AUTH_PORT:-4001}/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  catalog-service:
+    build: ./services/catalog-service
+    container_name: catalog-service
+    env_file:
+      - .env
+    environment:
+      PORT: ${CATALOG_PORT:-4002}
+      DB_HOST: db
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER:-app_user}
+      DB_NAME: ${DB_NAME:-ecommerce_db}
+      DB_PASSWORD: ${DB_PASSWORD:-app_password}
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:${CATALOG_PORT:-4002}/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  order-service:
+    build: ./services/order-service
+    container_name: order-service
+    env_file:
+      - .env
+    environment:
+      PORT: ${ORDER_PORT:-4003}
+      DB_HOST: db
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER:-app_user}
+      DB_NAME: ${DB_NAME:-ecommerce_db}
+      DB_PASSWORD: ${DB_PASSWORD:-app_password}
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:${ORDER_PORT:-4003}/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    env_file:
+      - .env
+    environment:
+      VITE_API_URL: /api
+    depends_on:
+      - auth-service
+      - catalog-service
+      - order-service
+    networks:
+      - app-network
+
+  proxy:
+    build: ./proxy
+    container_name: proxy
+    depends_on:
+      - frontend
+      - auth-service
+      - catalog-service
+      - order-service
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    networks:
+      - app-network
+
+volumes:
+  db_data:
+
+networks:
+  app-network:
+    driver: bridge

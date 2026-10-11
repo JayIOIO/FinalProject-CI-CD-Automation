@@ -1,13 +1,22 @@
-{
+﻿{
   "name": "million-dollar-app",
   "version": "1.0.0",
-  "description": "",
+  "description": "E-commerce application with Docker and Jenkins automation for the system architecture final project",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\""
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down -v",
+    "test": "echo \"No root test suite configured\""
   },
-  "keywords": [],
+  "keywords": [
+    "ecommerce",
+    "docker",
+    "jenkins",
+    "react",
+    "express",
+    "mysql"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
