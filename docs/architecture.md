@@ -33,7 +33,7 @@ Jenkins (separate Compose stack)
 - **Reverse proxy:** the public HTTP entry point; forwards API paths to their service and other paths to the frontend.
 - **Jenkins:** validates code, builds versioned images, checks an isolated deployment with an end-to-end API test, and deploys only the default `main` branch.
 
-The root `backend/` directory is a legacy monolithic prototype, not a Compose service. The active backend modules are under `services/`.
+The active backend modules are the three independent services under `services/`. For local feature development, the root `npm run dev` starts those services and the Vite frontend; the frontend development proxy routes API calls to the service ports.
 
 Product reads are public so visitors can browse the catalog. Listing changes require a seller JWT and are scoped to that seller's user ID. Seller fulfillment updates operate on their own order items rather than changing other sellers' items in the same checkout.
 

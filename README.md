@@ -67,14 +67,28 @@ More detail is in [docs/architecture.md](./docs/architecture.md).
     └── order-service/
 ```
 
-The root `backend/` folder is the original monolithic prototype and is not used by the Docker Compose deployment. The deployed backend is the three independent services under `services/`. Do not use the old monolith as evidence of the current container architecture.
-
 ## Prerequisites
 
 - Docker Desktop with Linux containers, or Docker Engine with Docker Compose v2.
+- Node.js and npm for running the application modules directly.
+- MySQL Server if running the application without Docker.
 - Git.
 - A GitHub repository containing this project.
 - Jenkins is only needed to run the CI/CD section.
+
+## Run the application without Docker
+
+For local feature development, the root `npm run dev` starts the authentication, catalog, and order services plus the Vite frontend. It does not start MySQL; use a local MySQL Server and configure its credentials in `.env`.
+
+```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+notepad .env
+npm run setup
+cmd /c "mysql -u root -p < db\init.sql"
+npm run dev
+```
+
+The `npm run dev` command connects to MySQL at `127.0.0.1`; the database user and password in `.env` must match an account on your local MySQL Server. Open <http://localhost:5173>. The Vite development proxy forwards API requests to the three services on ports 4001–4003. Press **Ctrl+C** to stop all development processes.
 
 ## Run locally
 
