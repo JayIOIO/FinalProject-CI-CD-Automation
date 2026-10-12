@@ -377,3 +377,67 @@ body {
 .btn-danger:hover {
   background-color: #c9302c;
 }
+
+.product-search {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 10px;
+  margin-bottom: 1rem;
+  background: #ffffff;
+  padding: 1rem;
+}
+
+.seller-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 2fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.seller-form-card .profile-form {
+  display: grid;
+  gap: 8px;
+}
+
+.seller-listings {
+  display: grid;
+  gap: 10px;
+}
+
+.seller-listing,
+.seller-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.seller-listing {
+  border-bottom: 1px solid #eeeeee;
+  padding: 10px 0;
+}
+
+.seller-listing p,
+.order-item-card p {
+  margin-top: 5px;
+  color: #666666;
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  .product-search,
+  .seller-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .nav-container {
+    gap: 16px;
+    overflow-x: auto;
+  }
+
+  .order-item-card {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+}

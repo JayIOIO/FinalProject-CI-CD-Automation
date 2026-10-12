@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
     "docker:up": "docker compose up -d --build",
-    "docker:down": "docker compose down -v",
-    "test": "echo \"No root test suite configured\""
+    "docker:down": "docker compose down",
+    "test": "node -e \"console.error('No root test suite is configured; run the documented service and Docker integration checks.'); process.exit(1)\""
   },
   "keywords": [
     "ecommerce",

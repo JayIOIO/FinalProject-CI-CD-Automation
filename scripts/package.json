@@ -1,0 +1,11 @@
+{
+  "name": "ecomapp-maintenance",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "migrate": "node migrate-marketplace.js"
+  },
+  "dependencies": {
+    "mysql2": "^3.24.5"
+  }
+}
